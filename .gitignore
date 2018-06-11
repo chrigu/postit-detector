@@ -1,0 +1,8 @@
+.idea
+__pycache__
+postit-front
+postit-web
+.DS_Store
+*.jpg
+*.code-workspace
+yarn-error.log
