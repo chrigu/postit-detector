@@ -142,7 +142,8 @@ def find_postits(url, update):
 
         if w > 50 and h > 50:
             new_img = image[y:y+h,x:x+w]
-            path = "{}/postit-web/uploads/{}.jpg".format(os.getcwd(), str(index))
+            path = "../postit-web/uploads/{}.jpg".format(str(index))
+            print(path)
             cv2.imwrite(path, new_img)
 
             postit = {
