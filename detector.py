@@ -1,6 +1,7 @@
 import os
 import cv2
 import json
+import urllib.request
 import numpy as np
 
 PINK_MIN = 300 / 2
@@ -82,16 +83,33 @@ def crop(mask, out):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+def imgFromUrl(url):
+    req = urllib.request.urlopen(url)
+    arr = np.asarray(bytearray(req.read()), dtype=np.uint8)
+    return cv2.imdecode(arr, -1) # 'Load it as it is'
 
-def find_postits(image_path, update):
-    #image = cv2.imread('./images/postit_small.jpg')
-    image = cv2.imread(image_path)
-    update(json.dumps({"status": "imageread"}))
+def find_postits(url, update):
+    # image = cv2.imread(url)
+    image = imgFromUrl(url)
+
+    height, width = image.shape[:2]
+    main_image = {
+        "url": url,
+        "height": height,
+        "width": width
+    }
+
+    update({
+        "status": "imageread", 
+        "mainImage": main_image
+        })
+
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     hist = cv2.calcHist([hsv], [0, 1], None, [180, 256], [0, 180, 0, 256])
     # plt.imshow(hist, interpolation='nearest')
     # plt.show()
-    update(json.dumps({"status": "histdone"}))
+
+    update({"status": "histdone"})
 
     # https://stackoverflow.com/questions/47342025/how-to-detect-colored-patches-in-an-image-using-opencv
     h, s, v = cv2.split(hsv)
@@ -124,15 +142,15 @@ def find_postits(image_path, update):
 
         if w > 50 and h > 50:
             new_img = image[y:y+h,x:x+w]
-            path = "{}/{}.jpg".format(os.getcwd(), str(index))
+            path = "{}/postit-web/uploads/{}.jpg".format(os.getcwd(), str(index))
             cv2.imwrite(path, new_img)
 
             postit = {
-                "path": path,
+                "url": "{}/{}.jpg".format('http://localhost:4000', str(index)),
                 "x": x,
                 "y": y,
-                "w": w,
-                "h": h
+                "width": w,
+                "height": h
             }
 
             postits.append(postit)

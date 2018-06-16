@@ -11,7 +11,7 @@
 import pika
 import json
 from detector import find_postits
-
+from text_detector import detect_text
 
 def init_service():
     credentials = pika.PlainCredentials('guest', 'guest')
@@ -44,8 +44,11 @@ def init_service():
                                       delivery_mode=2,  # make message persistent
                                   ))
 
-        postits = find_postits(data['image_url'], update_callback)
-        update_callback(postits)
+        status = find_postits(data['image_url'], update_callback)
+        update_callback({"status": "text"})
+        annotate_posits(status)
+        print(status)
+        update_callback(status)
 
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(callback,
@@ -54,20 +57,11 @@ def init_service():
     channel.start_consuming()
 
 
+def annotate_posits(status):
+    for postit in status["postits"]:
+        postit["text"] = detect_text(postit["url"])
+
+
 if __name__ == "__main__":
     # execute only if run as a script
     init_service()
-
-
-# def update_callback(channel, client_id):
-#
-#     def callback(message):
-#
-#         update_data = {'message': message, 'client_id': data['client_id']}
-#
-#         channel.basic_publish(exchange='',
-#                               routing_key='update_queue',
-#                               body=json.dumps(message),
-#                               properties=pika.BasicProperties(
-#                                   delivery_mode=2,  # make message persistent
-#                               ))
