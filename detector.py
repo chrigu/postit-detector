@@ -83,10 +83,12 @@ def crop(mask, out):
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
+
 def imgFromUrl(url):
     req = urllib.request.urlopen(url)
     arr = np.asarray(bytearray(req.read()), dtype=np.uint8)
     return cv2.imdecode(arr, -1) # 'Load it as it is'
+
 
 def find_postits(url, update):
     # image = cv2.imread(url)
@@ -99,17 +101,14 @@ def find_postits(url, update):
         "width": width
     }
 
-    update({
-        "status": "imageread", 
-        "mainImage": main_image
-        })
+    update("Analyzing")
 
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     hist = cv2.calcHist([hsv], [0, 1], None, [180, 256], [0, 180, 0, 256])
     # plt.imshow(hist, interpolation='nearest')
     # plt.show()
 
-    update({"status": "histdone"})
+    # update({"status": "histdone"})
 
     # https://stackoverflow.com/questions/47342025/how-to-detect-colored-patches-in-an-image-using-opencv
     h, s, v = cv2.split(hsv)
@@ -158,7 +157,8 @@ def find_postits(url, update):
 
     return {
         "status": "done",
-        "postits": postits
+        "postits": postits,
+        "main_image": main_image
     }
     # cv2.imshow('detected', canvas)
     # cv2.waitKey(0)

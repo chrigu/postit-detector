@@ -12,6 +12,8 @@ import pika
 import json
 from detector import find_postits
 from text_detector import detect_text
+from graphql_client import update_image_status, create_postits, update_image_size
+
 
 def init_service():
     credentials = pika.PlainCredentials('guest', 'guest')
@@ -23,9 +25,8 @@ def init_service():
     channel = connection.channel()
 
     channel.queue_declare(queue='task_queue', durable=True)
-    channel.queue_declare(queue='update_queue', durable=True)
+    # channel.queue_declare(queue='update_queue', durable=True)
     print(' [*] Waiting for messages. To exit press CTRL+C')
-
 
     def callback(ch, method, properties, body):
         data = json.loads(body)
@@ -35,20 +36,25 @@ def init_service():
 
         def update_callback(message):
 
-            update_data = {'message': message, 'client_id': data['client_id']}
-
-            channel.basic_publish(exchange='',
-                                  routing_key='update_queue',
-                                  body=json.dumps(update_data),
-                                  properties=pika.BasicProperties(
-                                      delivery_mode=2,  # make message persistent
-                                  ))
+            # update_data = {'message': message, 'client_id': data['client_id']}
+            #
+            # channel.basic_publish(exchange='',
+            #                       routing_key='update_queue',
+            #                       body=json.dumps(update_data),
+            #                       properties=pika.BasicProperties(
+            #                           delivery_mode=2,  # make message persistent
+            #                       ))
+            update_image_status(message, data['id'])
 
         status = find_postits(data['image_url'], update_callback)
-        update_callback({"status": "text"})
+        # update_callback("Analyzed")
+        print(status)
         annotate_posits(status)
         print(status)
-        update_callback(status)
+        create_postits(status['postits'], data['id'])
+        print("done")
+        update_callback("Analyzed")
+        update_image_size(status['main_image']['width'], status['main_image']['height'], data['id'])
 
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(callback,
